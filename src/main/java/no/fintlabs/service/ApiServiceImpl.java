@@ -12,7 +12,7 @@ public class ApiServiceImpl implements ApiService {
     private String apiKey;
 
     private final OkHttpClient client;
-    private final MediaType JSON = MediaType.get("application/json; charset=utf-8");// private final String apiKey = "17a479e1d6d7dca1a262a9f10cf1a7c7196940a9b80abbe6f4a7ab077ef06099";  // Replace with your actual API key
+    private final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     public ApiServiceImpl() {
         this.client = new OkHttpClient();
