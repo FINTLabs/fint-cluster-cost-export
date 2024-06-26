@@ -1,2 +1,7 @@
-package no.fintlabs.service;public class ApiService {
+package no.fintlabs.service;
+
+import java.io.IOException;
+
+public interface ApiService {
+    String callApi(String url) throws IOException;
 }

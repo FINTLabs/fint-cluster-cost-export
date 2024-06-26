@@ -9,3 +9,6 @@ server:
   error:
     include-message: never # Do not modify this setting without careful consideration, as changes may impact the system's security.
     include-stacktrace: never # Do not modify this setting without careful consideration, as changes may impact the system's security.
+
+
+

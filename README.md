@@ -17,3 +17,7 @@ Update the following files to reflect your project
 * k8s.yaml
 * Jenkins
 
+### Define api key from cast for local development
+* Get api key from Cast.asi
+* Insert in enviroment fint.cluster.cost.export.apiKey
+
