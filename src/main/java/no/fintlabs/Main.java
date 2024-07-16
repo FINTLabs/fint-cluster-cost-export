@@ -4,6 +4,7 @@ import no.fintlabs.service.ApiService;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +13,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Main implements CommandLineRunner {
 
     private final ApiService apiService;
+
+
+    @Value("${fint.cluster.ids.betaClusterId}")
+    private String betaClusterId;
 
     @Autowired
     public Main(ApiService apiService) {
@@ -24,7 +29,7 @@ public class Main implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        String apiUrl = "https://api.cast.ai/v1/pricing/clusters/9c501dfb-8bac-4182-a798-d67552488065/nodes?nodeIds=98ce2a8f-0d27-4204-ada0-99db43f9b94d&nodeIds=1a0b158a-0fcc-4b6f-8be2-407b99aa28ec";
+        String apiUrl = String.format("https://api.cast.ai/v1/pricing/clusters/%s/nodes", betaClusterId);
         String response = apiService.callApi(apiUrl);
 
         JSONObject jsonObj = new JSONObject(response);
