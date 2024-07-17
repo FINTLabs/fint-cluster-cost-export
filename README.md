@@ -1,21 +1,6 @@
-# FINT Spring Boot Template project
+# Fint cluster cost export
 
-## Setting up a new project based on the template
-### Clone
-```shell
-git clone https://github.com/FINTLabs/fint-cluster-cost-export.git <your project name>
-cd <your project name>
-rm -Rf .git
-git init
-```
-
-Or press **Use this template** and setup your new repository
-
-### Update deployment files
-Update the following files to reflect your project
-* Dockerfile
-* k8s.yaml
-* Jenkins
+A system to export and analyze service costs.
 
 ### Define api key from cast for local development
 * Get api key from Cast.ai
