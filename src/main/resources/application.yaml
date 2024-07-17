@@ -5,6 +5,12 @@ spring:
         jwt:
           issuer-uri: https://idp.felleskomponent.no/nidp/oauth/nam
 
+fint:
+  cluster:
+    cost:
+      export:
+        apiKey: ${FINT_CLUSTER_COST_EXPORT_API_KEY}
+
 server:
   error:
     include-message: never # Do not modify this setting without careful consideration, as changes may impact the system's security.
