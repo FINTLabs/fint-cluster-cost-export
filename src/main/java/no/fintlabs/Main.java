@@ -8,6 +8,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 
 @SpringBootApplication
 public class Main implements CommandLineRunner {
@@ -26,30 +30,36 @@ public class Main implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        String apiUrl = "https://api.cast.ai/v1/pricing/clusters/9c501dfb-8bac-4182-a798-d67552488065/nodes?nodeIds=98ce2a8f-0d27-4204-ada0-99db43f9b94d&nodeIds=1a0b158a-0fcc-4b6f-8be2-407b99aa28ec";
-        String response = apiService.callApi(apiUrl);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime aMonthAgo = now.minusMonths(1);
+
+        String startTime = aMonthAgo.toString().replace(":", "%3A") + "Z";
+        String endTime = now.toString().replace(":", "%3A") + "Z";
+
+        String url = "https://api.cast.ai/v1/cost-reports/workload-labels/values?label=fintlabs.no%2Forg-id&startTime=%s&endTime=%s".replace("%2F", "/");
+
+        String formattedUrl = String.format(url, startTime, endTime);
+
+        String response = apiService.callApi(formattedUrl);
 
         JSONObject jsonObj = new JSONObject(response);
-        JSONArray nodes = jsonObj.getJSONArray("nodes");
+        JSONArray labelValues = jsonObj.getJSONArray("labelValues");
 
         // Print header
-        System.out.println("+--------------------------------------+----------+-------------------+-----------+");
-        System.out.println("| Node ID                              | BasePrice| Total Regular Price | Total Price |");
-        System.out.println("+--------------------------------------+----------+-------------------+-----------+");
+        System.out.println("+--------------------------------------+");
+        System.out.println("| Label Values                         |");
+        System.out.println("+--------------------------------------+");
 
-        // Iterate through each node in the JSON array
-        for (int i = 0; i < nodes.length(); i++) {
-            JSONObject node = nodes.getJSONObject(i);
-            String id = node.getString("id");
-            String basePrice = node.getString("basePrice");
-            String totalRegularPrice = node.getString("totalRegularPrice");
-            String totalPrice = node.getString("totalPrice");
+        // Iterate through each label in the JSON array
+        for (int i = 0; i < labelValues.length(); i++) {
+            Object obj = labelValues.get(i);
+            String label = obj.toString();
 
-            // Print each node's data
-            System.out.format("| %-36s | %-8s | %-18s | %-10s |\n", id, basePrice, totalRegularPrice, totalPrice);
+            // Print each label's name
+            System.out.format("| %-36s |\n", label);
         }
 
         // Print footer
-        System.out.println("+--------------------------------------+----------+-------------------+-----------+");
+        System.out.println("+--------------------------------------+");
     }
 }

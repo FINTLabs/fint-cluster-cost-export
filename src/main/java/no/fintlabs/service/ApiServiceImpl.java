@@ -22,8 +22,9 @@ public class ApiServiceImpl implements ApiService {
     public String callApi(String url) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
-                .get()
+                .post(RequestBody.create(JSON, "{}"))
                 .addHeader("accept", "application/json")
+                .addHeader("content-type", "application/json")
                 .addHeader("X-API-Key", apiKey)
                 .build();
 
