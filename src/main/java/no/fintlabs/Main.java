@@ -10,7 +10,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @SpringBootApplication
@@ -36,14 +38,21 @@ public class Main implements CommandLineRunner {
         String startTime = aMonthAgo.toString().replace(":", "%3A") + "Z";
         String endTime = now.toString().replace(":", "%3A") + "Z";
 
-        String url = "https://api.cast.ai/v1/cost-reports/workload-labels/values?label=fintlabs.no%2Forg-id&startTime=%s&endTime=%s".replace("%2F", "/");
+        // Create url for labels
+        String labelUrl = "https://api.cast.ai/v1/cost-reports/workload-labels/values?label=fintlabs.no%2Forg-id&startTime=%s&endTime=%s".replace("%2F", "/");
+        String formattedLabelUrl = String.format(labelUrl, startTime, endTime);
+        String response = apiService.callApi(formattedLabelUrl);
 
-        String formattedUrl = String.format(url, startTime, endTime);
+        // Create url for workload metadata
+        String workloadUrl = "https://api.cast.ai/v1/cost-reports/workloads/metadata?startTime=%s&endTime=%s";
+        String formattedWorkloadUrl = String.format(workloadUrl, startTime, endTime);
+        String workloadResponse = apiService.callApi(formattedWorkloadUrl);
 
-        String response = apiService.callApi(formattedUrl);
+        JSONObject labelJsonObj = new JSONObject(response);
+        JSONArray labelValues = labelJsonObj.getJSONArray("labelValues");
 
-        JSONObject jsonObj = new JSONObject(response);
-        JSONArray labelValues = jsonObj.getJSONArray("labelValues");
+        JSONObject workloadJsonObj = new JSONObject(workloadResponse);
+        JSONArray workloadMetadata = workloadJsonObj.getJSONArray("workloads");
 
         // Print header
         System.out.println("+--------------------------------------+");
@@ -58,6 +67,33 @@ public class Main implements CommandLineRunner {
             // Print each label's name
             System.out.format("| %-36s |\n", label);
         }
+
+        // Print footer
+        System.out.println("+--------------------------------------+\n\n");
+
+        // Print header
+        System.out.println("+--------------------------------------+");
+        System.out.println("| Teams                                |");
+        System.out.println("+--------------------------------------+");
+
+        // Iterate trough the workloadMetadata
+        for (int i = 0; i < workloadMetadata.length(); i++) {
+            Object obj = workloadMetadata.get(i);
+
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("labels", ((JSONObject) obj).get("labels"));
+
+            JSONArray labels = (JSONArray) map.get("labels");
+            for (int j = 0; j < labels.length(); j++) {
+                JSONObject label = labels.getJSONObject(j);
+                String name = label.getString("name");
+                if ("fintlabs.no/team".equals(name)) {
+                    String value = label.getString("value");
+                    System.out.format("| %-36s |\n", value);
+                }
+            }
+        }
+
 
         // Print footer
         System.out.println("+--------------------------------------+");
