@@ -1,5 +1,9 @@
 package no.fintlabs;
 
+import no.fintlabs.instances.Labels;
+import no.fintlabs.instances.UrlGeneratorSingleWorkload;
+import no.fintlabs.instances.Workload;
+import no.fintlabs.instances.WorkloadDetail;
 import no.fintlabs.service.ApiService;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -9,10 +13,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 @SpringBootApplication
@@ -54,48 +55,13 @@ public class Main implements CommandLineRunner {
         JSONObject workloadJsonObj = new JSONObject(workloadResponse);
         JSONArray workloadMetadata = workloadJsonObj.getJSONArray("workloads");
 
-        // Print header
-        System.out.println("+--------------------------------------+");
-        System.out.println("| Label Values                         |");
-        System.out.println("+--------------------------------------+");
+        Labels labels = new Labels();
+        labels.printLabels(labelValues);
 
-        // Iterate through each label in the JSON array
-        for (int i = 0; i < labelValues.length(); i++) {
-            Object obj = labelValues.get(i);
-            String label = obj.toString();
+        Workload workload = new Workload();
+        List<WorkloadDetail> workloadDetails = workload.getWorkloads(workloadMetadata);
 
-            // Print each label's name
-            System.out.format("| %-36s |\n", label);
-        }
-
-        // Print footer
-        System.out.println("+--------------------------------------+\n\n");
-
-        // Print header
-        System.out.println("+--------------------------------------+");
-        System.out.println("| Teams                                |");
-        System.out.println("+--------------------------------------+");
-
-        // Iterate trough the workloadMetadata
-        for (int i = 0; i < workloadMetadata.length(); i++) {
-            Object obj = workloadMetadata.get(i);
-
-            Map<String, Object> map = new HashMap<String, Object>();
-            map.put("labels", ((JSONObject) obj).get("labels"));
-
-            JSONArray labels = (JSONArray) map.get("labels");
-            for (int j = 0; j < labels.length(); j++) {
-                JSONObject label = labels.getJSONObject(j);
-                String name = label.getString("name");
-                if ("fintlabs.no/team".equals(name)) {
-                    String value = label.getString("value");
-                    System.out.format("| %-36s |\n", value);
-                }
-            }
-        }
-
-
-        // Print footer
-        System.out.println("+--------------------------------------+");
+        UrlGeneratorSingleWorkload urlGeneratorSingleWorkload = new UrlGeneratorSingleWorkload();
+        urlGeneratorSingleWorkload.generateUrls(workloadDetails);
     }
 }
