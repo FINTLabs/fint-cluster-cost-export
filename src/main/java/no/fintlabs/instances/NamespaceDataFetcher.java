@@ -1,7 +1,10 @@
 package no.fintlabs.instances;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.fintlabs.service.ApiService;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.*;
@@ -9,6 +12,10 @@ import java.util.stream.Collectors;
 
 public class NamespaceDataFetcher {
     private ApiService apiService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Map<String, Map<String, Double>> clusterNamespaceCosts = new HashMap<>();
+
 
     public NamespaceDataFetcher(ApiService apiService) {
         this.apiService = apiService;
@@ -19,30 +26,23 @@ public class NamespaceDataFetcher {
         System.out.println("Total workload details: " + workloadDetails.size());
 
         Set<String> normalizedNamespaces = namespaces.stream()
-                .map(ns -> ns.toLowerCase().trim().replace("-", "."))
+                .map(this::normalizeNamespace)
                 .collect(Collectors.toSet());
 
         Map<String, List<WorkloadDetail>> workloadsByCluster = workloadDetails.stream()
-                        .filter(detail -> {
-                            String normalizedNamespace = detail.getNamespace().toLowerCase().trim().replace("-", ".");
-                            return normalizedNamespaces.contains(normalizedNamespace);
-                        })
+                        .filter(detail -> normalizedNamespaces.contains(normalizeNamespace(detail.getNamespace())))
                         .collect(Collectors.groupingBy(WorkloadDetail::getClusterId));
 
         for (Map.Entry<String, List<WorkloadDetail>> entry : workloadsByCluster.entrySet()) {
             String clusterId = entry.getKey();
             List<WorkloadDetail> clusterWorkloads = entry.getValue();
 
-            System.out.println("Cluster ID: " + clusterId);
-
             Set<String> processedNamespaces = new HashSet<>();
 
             for (WorkloadDetail detail : clusterWorkloads) {
-                String normalizedNamespace = detail.getNamespace().toLowerCase().trim().replace("-", ".");
+                String normalizedNamespace = normalizeNamespace(detail.getNamespace());
 
-                if (!processedNamespaces.contains(normalizedNamespace)) {
-                    processedNamespaces.add(normalizedNamespace);
-
+                if (processedNamespaces.add(normalizedNamespace)) {
                 String url = String.format(
                         "https://api.cast.ai/v1/cost-reports/clusters/%s/namespace-totalcost?startTime=%s&endTime=%s",
                         detail.getClusterId(),
@@ -53,7 +53,7 @@ public class NamespaceDataFetcher {
                 try {
                     String response = apiService.callApi(url);
                     String namespace = detail.getNamespace();
-                    processApiResponse(namespace, response);
+                    processApiResponse(clusterId, detail.getNamespace(), response);
                 } catch (IOException e) {
                     System.err.println("Error fetching data for namespace: " + detail.getNamespace());
                     e.printStackTrace();
@@ -61,9 +61,37 @@ public class NamespaceDataFetcher {
             }
             }
         }
+        printAggregatedTotalCostsByCluster();
     }
 
-    private void processApiResponse(String namespace,String response) {
-        System.out.println("Response for namespace " + namespace + ": "+ response);
+    private String normalizeNamespace(String namespace) {
+        return namespace.toLowerCase().trim().replace("-", ".");
+    }
+
+    private void processApiResponse(String clusterId, String namespace,String response) {
+        try {
+            JsonNode jsonResponse = objectMapper.readTree(response);
+            double totalCost = jsonResponse.get("items").elements()
+                            .next().get("costMetrics").elements()
+                            .next().get("totalCost").asDouble();
+
+            System.out.println("Extracted totalCost for cluster " + clusterId + " and namespace " + namespace + ": " + totalCost);
+
+            clusterNamespaceCosts
+                    .computeIfAbsent(clusterId, k -> new HashMap<>())
+                    .merge(namespace, totalCost, Double::sum);
+        } catch (IOException e) {
+            System.err.println("Error processing API response for cluster " + clusterId + " and namespace " + namespace);
+            e.printStackTrace();
+        }
+    }
+
+    private void printAggregatedTotalCostsByCluster() {
+        System.out.println("Total costs by cluster and namespace: ");
+        clusterNamespaceCosts.forEach((clusterId,namespaceCosts) -> {
+            System.out.println("Cluster ID: " + clusterId);
+            namespaceCosts.forEach((namespace, totalCost) ->
+                    System.out.println("  Namespace: " + namespace + " | Total Cost: " + totalCost));
+        });
     }
 }
