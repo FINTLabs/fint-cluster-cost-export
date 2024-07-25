@@ -1,11 +1,10 @@
 package no.fintlabs.instances;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import no.fintlabs.service.ApiService;
 
 import java.io.IOException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class NamespaceDataFetcher {
@@ -23,33 +22,48 @@ public class NamespaceDataFetcher {
                 .map(ns -> ns.toLowerCase().trim().replace("-", "."))
                 .collect(Collectors.toSet());
 
-        List<WorkloadDetail> sortedWorkloadDetailsByNamespace = workloadDetails.stream()
-                .filter(detail -> {
+        Map<String, List<WorkloadDetail>> workloadsByCluster = workloadDetails.stream()
+                        .filter(detail -> {
                             String normalizedNamespace = detail.getNamespace().toLowerCase().trim().replace("-", ".");
-                    return normalizedNamespaces.contains(normalizedNamespace);
-                })
-                .toList();
+                            return normalizedNamespaces.contains(normalizedNamespace);
+                        })
+                        .collect(Collectors.groupingBy(WorkloadDetail::getClusterId));
 
-        System.out.println("Filtered workload details count: " + sortedWorkloadDetailsByNamespace.size());
+        for (Map.Entry<String, List<WorkloadDetail>> entry : workloadsByCluster.entrySet()) {
+            String clusterId = entry.getKey();
+            List<WorkloadDetail> clusterWorkloads = entry.getValue();
 
-        for (WorkloadDetail detail : sortedWorkloadDetailsByNamespace) {
-            String url = String.format(
-                    "https://api.cast.ai/v1/cost-reports/clusters/%s/namespace-totalcost?startTime=%s&endTime=%s",
-                    detail.getClusterId(),
-                    startTime,
-                    endTime
-            );
+            System.out.println("Cluster ID: " + clusterId);
 
-            try {
-                String response = apiService.callApi(url);
-                processApiResponse(response, detail.getNamespace());
-            } catch (IOException e) {
-                System.err.println("Error fetching data for namespace: " + detail.getNamespace());
-                e.printStackTrace();            }
+            Set<String> processedNamespaces = new HashSet<>();
+
+            for (WorkloadDetail detail : clusterWorkloads) {
+                String normalizedNamespace = detail.getNamespace().toLowerCase().trim().replace("-", ".");
+
+                if (!processedNamespaces.contains(normalizedNamespace)) {
+                    processedNamespaces.add(normalizedNamespace);
+
+                String url = String.format(
+                        "https://api.cast.ai/v1/cost-reports/clusters/%s/namespace-totalcost?startTime=%s&endTime=%s",
+                        detail.getClusterId(),
+                        startTime,
+                        endTime
+                );
+
+                try {
+                    String response = apiService.callApi(url);
+                    String namespace = detail.getNamespace();
+                    processApiResponse(namespace, response);
+                } catch (IOException e) {
+                    System.err.println("Error fetching data for namespace: " + detail.getNamespace());
+                    e.printStackTrace();
+                }
+            }
+            }
         }
     }
 
-    private void processApiResponse(String response, String namespace) {
+    private void processApiResponse(String namespace,String response) {
         System.out.println("Response for namespace " + namespace + ": "+ response);
     }
 }
