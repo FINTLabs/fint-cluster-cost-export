@@ -11,7 +11,6 @@ public class UrlGeneratorSingleWorkload {
                     workloadDetail.getNamespace(),
                     workloadDetail.getWorkloadType(),
                     workloadDetail.getWorkloadName());
-            System.out.println(url);
         }
     }
 }

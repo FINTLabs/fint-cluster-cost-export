@@ -51,4 +51,8 @@ public class Workload {
         }
         return workloadDetails;
     }
+
+    public void getSingleWorkloadCostReport(WorkloadDetail workloadDetail) {
+        System.out.println(workloadDetail.toString());
+    }
 }

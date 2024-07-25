@@ -1,9 +1,6 @@
 package no.fintlabs;
 
-import no.fintlabs.instances.Labels;
-import no.fintlabs.instances.UrlGeneratorSingleWorkload;
-import no.fintlabs.instances.Workload;
-import no.fintlabs.instances.WorkloadDetail;
+import no.fintlabs.instances.*;
 import no.fintlabs.service.ApiService;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -56,12 +53,16 @@ public class Main implements CommandLineRunner {
         JSONArray workloadMetadata = workloadJsonObj.getJSONArray("workloads");
 
         Labels labels = new Labels();
-        labels.printLabels(labelValues);
+        List<String> namespaces = labels.extractNamespaces(labelValues);
+        labels.printLabels(namespaces);
 
         Workload workload = new Workload();
         List<WorkloadDetail> workloadDetails = workload.getWorkloads(workloadMetadata);
 
         UrlGeneratorSingleWorkload urlGeneratorSingleWorkload = new UrlGeneratorSingleWorkload();
         urlGeneratorSingleWorkload.generateUrls(workloadDetails);
+
+        NamespaceDataFetcher namespaceDataFetcher = new NamespaceDataFetcher(apiService);
+        namespaceDataFetcher.fetchAndProcessData(workloadDetails, startTime, endTime, namespaces);
     }
 }

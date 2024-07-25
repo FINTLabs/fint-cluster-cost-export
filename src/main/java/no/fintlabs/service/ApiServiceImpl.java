@@ -38,4 +38,24 @@ public class ApiServiceImpl implements ApiService {
             }
         }
     }
+
+    public String callGetApi(String url) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("accept", "application/json")
+                .addHeader("content-type", "application/json")
+                .addHeader("X-API-Key", apiKey)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                assert response.body() != null;
+                return response.body().string();
+            } else {
+                assert response.body() != null;
+                throw new IOException("Failed to get response: " + response.body().string());
+            }
+        }
+    }
 }
